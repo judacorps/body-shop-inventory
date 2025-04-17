@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Body Shop Parts Inventory</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+        header {
+            background-color: #0073e6;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #ccc;
+        }
+        .tab {
+            padding: 15px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: #0073e6;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+            padding: 20px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .section {
+            padding: 20px;
+            border-radius: 5px;
+            background-color: white;
+            margin-bottom: 20px;
+        }
+        .part-item {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+        }
+        .part-image {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            margin-right: 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        input[type="text"], textarea, input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #0073e6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #005bb5;
+        }
+        .search-container {
+            margin-bottom: 20px;
+        }
+        .search-container input {
+            width: calc(100% - 22px);
+        }
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 600px;
+            text-align: center;
+            position: relative;
+        }
+        .modal img {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 15px;
+        }
+        .close {
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+        }
+        .close:hover {
+            color: red;
+        }
+        .modal button {
+            padding: 10px 20px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .modal button:hover {
+            background-color: #b02a37;
+        }
+        .delete-button {
+            background-color: #dc3545;
+            margin-left: auto;
+        }
+        .delete-button:hover {
+            background-color: #b02a37;
+        }
+        #statusMessage {
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Body Shop Parts Inventory</h1>
+    </header>
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('exterior')">Exterior Panels</div>
+        <div class="tab" onclick="switchTab('windows')">Windows</div>
+    </div>
+    <!-- Exterior Panels Tab -->
+    <div id="exterior" class="tab-content active">
+        <div class="section">
+            <h2>Add New Exterior Panel</h2>
+            <input type="text" id="newPanelName" placeholder="Panel Name">
+            <textarea id="newPanelDescription" placeholder="Panel Description"></textarea>
+            <input type="file" id="newPanelImage" accept="image/*">
+            <button onclick="addPanel()">Add Panel</button>
+            <div id="statusMessage"></div>
+        </div>
+        <div class="section">
+            <h2>Search Exterior Panels</h2>
+            <div class="search-container">
+                <input type="text" id="panelSearchInput" placeholder="Search by name or description..." onkeyup="filterPanels()">
+            </div>
+            <h2>Exterior Panels List</h2>
+            <div id="panelsList"></div>
+        </div>
+    </div>
+    <!-- Windows Tab -->
+    <div id="windows" class="tab-content">
+        <div class="section">
+            <h2>Add New Window</h2>
+            <input type="text" id="newWindowName" placeholder="Window Name">
+            <textarea id="newWindowDescription" placeholder="Window Description"></textarea>
+            <input type="file" id="newWindowImage" accept="image/*">
+            <button onclick="addWindow()">Add Window</button>
+            <div id="windowStatusMessage"></div>
+        </div>
+        <div class="section">
+            <h2>Search Windows</h2>
+            <div class="search-container">
+                <input type="text" id="windowSearchInput" placeholder="Search by name or description..." onkeyup="filterWindows()">
+            </div>
+            <h2>Windows List</h2>
+            <div id="windowsList"></div>
+        </div>
+    </div>
+    <!-- Modal -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <img id="modalImage" src="" alt="Full Image">
+            <p id="modalDescription"></p>
+            <button onclick="closeModal()">Close</button>
+        </div>
+    </div>
+    <script>
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzPk1HY4JMk_uNkKjMX9kkXEAd2mfl3YCvNrWr86SrsBSZQ2f8gINB1ZI5mAUHcQr6LrA/exec';
+
+        function showStatus(message, isError = false, elementId = 'statusMessage') {
+            const statusDiv = document.getElementById(elementId);
+            statusDiv.textContent = message;
+            statusDiv.className = isError ? 'error' : 'success';
+            statusDiv.style.display = 'block';
+
+            if (isError) {
+                console.error(message);
+            } else {
+                console.log(message);
+            }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        function addPanel() {
+            showStatus("Processing your request...");
+            const name = document.getElementById('newPanelName').value.trim();
+            const description = document.getElementById('newPanelDescription').value.trim();
+            const imageInput = document.getElementById('newPanelImage');
+
+            if (!name || !description || !imageInput.files.length) {
+                showStatus("Please complete all fields and upload an image.", true);
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = {
+                    name: name,
+                    description: description,
+                    image: e.target.result.split(',')[1], // Send only the base64 data
+                    type: "panel"
+                };
+
+                fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(() => {
+                    showStatus("Success! Panel added to inventory.");
+                    document.getElementById('newPanelName').value = '';
+                    document.getElementById('newPanelDescription').value = '';
+                    document.getElementById('newPanelImage').value = '';
+                })
+                .catch((error) => {
+                    showStatus("Error: " + error.message, true);
+                });
+            };
+            reader.onerror = function() {
+                showStatus("Error reading the image file.", true);
+            };
+            reader.readAsDataURL(imageInput.files[0]);
+        }
+
+        function addWindow() {
+            showStatus("Processing your request...", false, "windowStatusMessage");
+            const name = document.getElementById('newWindowName').value.trim();
+            const description = document.getElementById('newWindowDescription').value.trim();
+            const imageInput = document.getElementById('newWindowImage');
+
+            if (!name || !description || !imageInput.files.length) {
+                showStatus("Please complete all fields and upload an image.", true, "windowStatusMessage");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = {
+                    name: name,
+                    description: description,
+                    image: e.target.result.split(',')[1], // Send only the base64 data
+                    type: "window"
+                };
+
+                fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(() => {
+                    showStatus("Success! Window added to inventory.", false, "windowStatusMessage");
+                    document.getElementById('newWindowName').value = '';
+                    document.getElementById('newWindowDescription').value = '';
+                    document.getElementById('newWindowImage').value = '';
+                })
+                .catch((error) => {
+                    showStatus("Error: " + error.message, true, "windowStatusMessage");
+                });
+            };
+            reader.onerror = function() {
+                showStatus("Error reading the image file.", true, "windowStatusMessage");
+            };
+            reader.readAsDataURL(imageInput.files[0]);
+        }
+
+        function openModal(imageSrc, description) {
+            const modal = document.getElementById('imageModal');
+            const modalImage = document.getElementById('modalImage');
+            const modalDescription = document.getElementById('modalDescription');
+            modalImage.src = imageSrc;
+            modalDescription.textContent = description;
+            modal.style.display = 'block';
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('imageModal');
+            modal.style.display = 'none';
+        }
+
+        function filterPanels() {
+            const input = document.getElementById('panelSearchInput');
+            const filter = input.value.toUpperCase();
+            const items = document.querySelectorAll('#panelsList .part-item');
+            items.forEach(item => {
+                const text = item.textContent || item.innerText;
+                if (text.toUpperCase().indexOf(filter) > -1) {
+                    item.style.display = "";
+                } else {
+                    item.style.display = "none";
+                }
+            });
+        }
+
+        function filterWindows() {
+            const input = document.getElementById('windowSearchInput');
+            const filter = input.value.toUpperCase();
+            const items = document.querySelectorAll('#windowsList .part-item');
+            items.forEach(item => {
+                const text = item.textContent || item.innerText;
+                if (text.toUpperCase().indexOf(filter) > -1) {
+                    item.style.display = "";
+                } else {
+                    item.style.display = "none";
+                }
+            });
+        }
+
+        function fetchParts() {
+            fetch(`${GOOGLE_SCRIPT_URL}?action=get`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data && data.success) {
+                    renderParts(data.panels, 'panelsList');
+                    renderParts(data.windows, 'windowsList');
+                } else {
+                    throw new Error("Failed to load parts data.");
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching parts:", error);
+                showStatus("Failed to load parts. Please try again later.", true);
+            });
+        }
+
+        function renderParts(parts, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = ''; // Clear current list
+
+            if (parts && parts.length > 0) {
+                parts.forEach(part => {
+                    const partDiv = document.createElement('div');
+                    partDiv.className = 'part-item';
+
+                    const img = document.createElement('img');
+                    img.src = `data:image/jpeg;base64,${part.image}`;
+                    img.alt = part.name;
+                    img.className = 'part-image';
+                    img.onclick = () => openModal(img.src, part.description);
+
+                    const detailsDiv = document.createElement('div');
+                    detailsDiv.innerHTML = `<strong>${part.name}</strong><br>${part.description}`;
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.textContent = 'Delete';
+                    deleteButton.className = 'delete-button';
+                    deleteButton.onclick = () => deletePart(part.id, containerId);
+
+                    partDiv.appendChild(img);
+                    partDiv.appendChild(detailsDiv);
+                    partDiv.appendChild(deleteButton);
+
+                    container.appendChild(partDiv);
+                });
+            } else {
+                container.innerHTML = '<p>No parts available.</p>';
+            }
+        }
+
+        function deletePart(id, containerId) {
+            fetch(`${GOOGLE_SCRIPT_URL}?action=delete&id=${id}`, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showStatus("Part deleted successfully.");
+                    fetchParts(); // Refresh parts list after deletion
+                } else {
+                    showStatus("Failed to delete part. Please try again.", true);
+                }
+            })
+            .catch(error => {
+                console.error("Error deleting part:", error);
+                showStatus("Failed to delete part. Please try again.", true);
+            });
+        }
+
+        window.onload = function() {
+            fetchParts(); // Load existing panels and windows when page loads
+        };
+    </script>
+</body>
+</html>
